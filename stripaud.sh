@@ -74,10 +74,20 @@ fuzzy_search_with_fzf() {
 
 process_file() {
   local input_file="$1"
+  local file_num="$2"
+  local total_files="$3"
   
   if [ ! -f "$input_file" ]; then
     echo "Error: File '$input_file' does not exist"
     return 1
+  fi
+  
+  # Show progress if processing multiple files
+  if [ -n "$file_num" ] && [ -n "$total_files" ] && [ "$total_files" -gt 1 ]; then
+    echo ""
+    echo "================================================"
+    echo "Processing file $file_num of $total_files"
+    echo "================================================"
   fi
   
   echo "Analyzing audio tracks in '$input_file'..."
@@ -109,6 +119,13 @@ process_file() {
   display_menu() {
     clear
     local filename=$(basename "$input_file")
+    
+    # Show progress header if processing multiple files
+    if [ -n "$file_num" ] && [ -n "$total_files" ] && [ "$total_files" -gt 1 ]; then
+      echo "[$file_num/$total_files] Processing multiple files"
+      echo ""
+    fi
+    
     echo "File: $filename"
     echo ""
     echo "Select audio tracks to KEEP:"
@@ -230,43 +247,99 @@ process_file() {
   fi
 }
 
+process_multiple_files() {
+  local files=("$@")
+  local total=${#files[@]}
+  local current=1
+  local successful=0
+  local failed=0
+  
+  echo "Found $total media file(s) to process."
+  
+  for file in "${files[@]}"; do
+    process_file "$file" "$current" "$total"
+    if [ $? -eq 0 ]; then
+      ((successful++))
+    else
+      ((failed++))
+    fi
+    ((current++))
+  done
+  
+  echo ""
+  echo "================================================"
+  echo "Processing complete!"
+  echo "Successfully processed: $successful file(s)"
+  if [ $failed -gt 0 ]; then
+    echo "Failed: $failed file(s)"
+  fi
+  echo "================================================"
+}
+
 main() {
   if [ $# -eq 0 ]; then
-    echo "Usage: $0 <media_file_or_directory>"
+    echo "Usage: $0 <media_file_or_directory_or_pattern>"
     echo ""
     echo "Examples:"
-    echo "  $0 video.mp4           # Process a single file"
-    echo "  $0 /path/to/videos     # Search and select from directory"
-    echo "  $0 .                   # Search in current directory"
+    echo "  $0 video.mp4                  # Process a single file"
+    echo "  $0 /path/to/videos            # Search and select from directory"
+    echo "  $0 /path/to/*prefix*          # Process all matching files"
+    echo "  $0 *.mp4                      # Process all mp4 files in current directory"
+    echo "  $0 .                          # Search in current directory"
     exit 1
   fi
   
-  input_path="$1"
+  # Check if we're dealing with a glob pattern by checking if multiple files match
+  matching_files=()
+  for arg in "$@"; do
+    # If the argument contains wildcards and matches files
+    if [[ "$arg" == *[\*\?]* ]]; then
+      # Use nullglob to handle no matches gracefully
+      shopt -s nullglob
+      for file in $arg; do
+        if [[ "$file" =~ \.(mp4|mkv|avi|mov|webm|m4v)$ ]]; then
+          matching_files+=("$file")
+        fi
+      done
+      shopt -u nullglob
+    elif [ -f "$arg" ]; then
+      # Single file argument
+      matching_files+=("$arg")
+    elif [ -d "$arg" ]; then
+      # Directory argument - use fuzzy search
+      input_path="$arg"
+      echo "Directory mode: Searching for media files in '$input_path'"
+      echo ""
+      
+      if check_fzf; then
+        selected_file=$(fuzzy_search_with_fzf "$input_path")
+      else
+        selected_file=$(simple_fuzzy_search "$input_path")
+      fi
+      
+      if [ $? -eq 0 ] && [ -n "$selected_file" ]; then
+        echo ""
+        echo "Selected: $selected_file"
+        echo ""
+        process_file "$selected_file" "" ""
+      else
+        echo "No file selected or error occurred."
+        exit 1
+      fi
+      exit 0
+    fi
+  done
   
-  if [ -f "$input_path" ]; then
-    process_file "$input_path"
-  elif [ -d "$input_path" ]; then
-    echo "Directory mode: Searching for media files in '$input_path'"
-    echo ""
-    
-    if check_fzf; then
-      selected_file=$(fuzzy_search_with_fzf "$input_path")
-    else
-      selected_file=$(simple_fuzzy_search "$input_path")
-    fi
-    
-    if [ $? -eq 0 ] && [ -n "$selected_file" ]; then
-      echo ""
-      echo "Selected: $selected_file"
-      echo ""
-      process_file "$selected_file"
-    else
-      echo "No file selected or error occurred."
-      exit 1
-    fi
-  else
-    echo "Error: '$input_path' is neither a file nor a directory"
+  # Process based on what we found
+  if [ ${#matching_files[@]} -eq 0 ]; then
+    echo "Error: No matching media files found for pattern '$1'"
     exit 1
+  elif [ ${#matching_files[@]} -eq 1 ]; then
+    # Single file - process directly
+    process_file "${matching_files[0]}" "" ""
+  else
+    # Multiple files - process with progress counter
+    process_multiple_files "${matching_files[@]}"
   fi
 }
 
