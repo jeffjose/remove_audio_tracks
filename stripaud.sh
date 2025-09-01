@@ -109,15 +109,7 @@ process_file() {
   display_menu() {
     clear
     local filename=$(basename "$input_file")
-    local max_width=80
-    
-    if [ ${#filename} -gt $max_width ]; then
-      local truncated="${filename:0:$((max_width-3))}..."
-      echo "File: $truncated"
-    else
-      echo "File: $filename"
-    fi
-    
+    echo "File: $filename"
     echo ""
     echo "Select audio tracks to KEEP:"
     echo "Use ↑/↓ to navigate, SPACE to toggle, ENTER to confirm, 'q' to quit"
