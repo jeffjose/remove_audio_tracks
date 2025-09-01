@@ -126,7 +126,7 @@ process_file() {
       echo ""
     fi
     
-    echo "File: $filename"
+    echo "$filename"
     echo ""
     echo "Select audio tracks to KEEP:"
     echo "Use ↑/↓ to navigate, SPACE to toggle, ENTER to confirm, 'q' to quit"
