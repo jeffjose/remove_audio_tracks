@@ -108,8 +108,19 @@ process_file() {
   
   display_menu() {
     clear
-    echo "Select audio tracks to KEEP in '$(basename "$input_file")':"
-    echo "Use ↑/↓ to navigate, SPACE to select/deselect, ENTER to confirm"
+    local filename=$(basename "$input_file")
+    local max_width=80
+    
+    if [ ${#filename} -gt $max_width ]; then
+      local truncated="${filename:0:$((max_width-3))}..."
+      echo "File: $truncated"
+    else
+      echo "File: $filename"
+    fi
+    
+    echo ""
+    echo "Select audio tracks to KEEP:"
+    echo "Use ↑/↓ to navigate, SPACE to toggle, ENTER to confirm, 'q' to quit"
     echo "================================================"
     
     for i in "${!tracks[@]}"; do
@@ -129,7 +140,6 @@ process_file() {
     done
     
     echo "================================================"
-    echo "Press 'q' to quit without making changes"
   }
   
   cursor=0
