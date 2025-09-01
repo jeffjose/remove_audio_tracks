@@ -172,7 +172,7 @@ process_file() {
     elif [[ $key == 'q' ]] || [[ $key == 'Q' ]]; then
       tput cnorm
       clear
-      echo "Cancelled. No changes made to '$(basename "$input_file")'."
+      echo "Cancelled. No changes made."
       return 0
     fi
   done
@@ -181,7 +181,7 @@ process_file() {
   clear
   
   tracks_to_keep=""
-  echo "Selected tracks to keep in '$(basename "$input_file")':"
+  echo "Selected tracks to keep:"
   echo "------------------------"
   for i in "${!tracks[@]}"; do
     if [ "${selected[$i]}" = true ]; then
@@ -193,7 +193,7 @@ process_file() {
   
   if [ -z "$tracks_to_keep" ]; then
     echo ""
-    echo "No tracks selected. Skipping '$(basename "$input_file")'."
+    echo "No tracks selected. Skipping file."
     return 0
   fi
   
@@ -221,11 +221,11 @@ process_file() {
   
   if [ $? -eq 0 ]; then
     mv "$temp_file" "$input_file"
-    echo "Successfully modified '$(basename "$input_file")'"
+    echo "Successfully modified file."
     return 0
   else
     rm -f "$temp_file"
-    echo "Error occurred while processing '$(basename "$input_file")'"
+    echo "Error occurred while processing file."
     return 1
   fi
 }
