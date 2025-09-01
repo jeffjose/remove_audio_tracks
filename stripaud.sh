@@ -214,12 +214,12 @@ process_file() {
     return 0
   fi
   
-  # Check if it's a no-op (single track file and keeping that track)
+  # Check if it's a no-op (keeping all tracks)
   local num_selected=$(echo $tracks_to_keep | wc -w)
-  if [ ${#tracks[@]} -eq 1 ] && [ $num_selected -eq 1 ]; then
+  if [ ${#tracks[@]} -eq $num_selected ]; then
     echo "------------------------"
     echo ""
-    echo "File already has only this track. No changes needed."
+    echo "All tracks selected. No changes needed."
     return 0
   fi
   
