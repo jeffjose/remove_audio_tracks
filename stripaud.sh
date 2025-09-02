@@ -155,7 +155,9 @@ process_file() {
   
   tput civis
   
-  trap 'tput cnorm' INT TERM EXIT
+  # Trap to restore cursor and exit cleanly on interrupt
+  trap 'tput cnorm; clear; echo "Interrupted."; exit 130' INT
+  trap 'tput cnorm' TERM EXIT
   
   while true; do
     display_menu
